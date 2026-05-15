@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ScoringRecord {
+  id                        Int      @id @default(autoincrement())
+  scoringAiId               String   @unique
+  requestNo                 String
+  contentsName              String
+  artistName                String
+  dContentsName             String
+  dArtistName               String
+  damserial                 String   @default("")
+  dataKind                  String   @default("")
+  clubDamCardNo             String   @default("")
+  entryCount                Int?
+  analysisReportCommentNo   String?
+  radarChartPitch           Float?
+  radarChartStability       Float?
+  radarChartExpressive      Float?
+  radarChartVibratoLongtone Float?
+  radarChartRhythm          Float?
+  singingRangeHighest       String?
+  singingRangeLowest        String?
+  vocalRangeHighest         String?
+  vocalRangeLowest          String?
+  performedAt               DateTime
+  fetchedAt                 DateTime @default(now())
+
+  @@index([requestNo])
+  @@index([performedAt])
+  @@index([contentsName])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
