@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { syncStream } from "@/lib/sync";
 import { getSetting } from "@/lib/db";
