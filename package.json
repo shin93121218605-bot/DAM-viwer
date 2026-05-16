@@ -15,7 +15,7 @@
     "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^5.22.0",
     "fast-xml-parser": "^4.5.3",
-    "next": "14.2.29",
+    "next": "^14.2.30",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^2.15.3"
