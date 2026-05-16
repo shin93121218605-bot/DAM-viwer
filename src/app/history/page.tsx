@@ -16,57 +16,29 @@ interface Record {
   requestNo: string;
 }
 
-const PAGE_SIZE = 30;
-
 export default function HistoryPage() {
   const [records, setRecords] = useState<Record[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    fetch("/api/stats")
+    setLoading(true);
+    fetch(`/api/records?page=${page}&limit=30`)
       .then((r) => r.json())
-      .then((d) => setRecords(d.recentRecords ?? []))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Fetch all records separately
-  const [allRecords, setAllRecords] = useState<Record[]>([]);
-  const [allLoaded, setAllLoaded] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/songs")
-      .then((r) => r.json())
-      .then(async (d) => {
-        // Fetch history for all songs to build full list
-        const songs = d.songs ?? [];
-        const all: Record[] = [];
-        for (const song of songs) {
-          const res = await fetch(`/api/songs/${song.requestNo}`);
-          if (res.ok) {
-            const data = await res.json();
-            all.push(...(data.records ?? []));
-          }
-        }
-        all.sort(
-          (a, b) =>
-            new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()
-        );
-        setAllRecords(all);
+      .then((d) => {
+        setRecords(d.records ?? []);
+        setTotal(d.total ?? 0);
+        setTotalPages(d.totalPages ?? 1);
       })
-      .finally(() => setAllLoaded(true));
-  }, []);
-
-  const displayRecords = allLoaded ? allRecords : records;
-  const totalPages = Math.ceil(displayRecords.length / PAGE_SIZE);
-  const paged = displayRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+      .finally(() => setLoading(false));
+  }, [page]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-gray-800">採点履歴</h1>
-      <p className="text-sm text-gray-500">
-        {displayRecords.length} 件 {!allLoaded && "(読み込み中...)"}
-      </p>
+      <p className="text-sm text-gray-500">{total.toLocaleString()} 件</p>
 
       {loading ? (
         <p className="text-gray-400 text-sm">読み込み中...</p>
@@ -87,7 +59,7 @@ export default function HistoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {paged.map((r) => (
+                {records.map((r) => (
                   <tr key={r.scoringAiId} className="hover:bg-gray-50">
                     <td className="px-4 py-2 text-sm text-gray-500 whitespace-nowrap">
                       {new Date(r.performedAt).toLocaleDateString("ja-JP")}
