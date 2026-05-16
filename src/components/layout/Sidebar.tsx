@@ -9,6 +9,7 @@ const links = [
   { href: "/history", label: "採点履歴", icon: "📋" },
   { href: "/rankings", label: "ランキング", icon: "🏆" },
   { href: "/settings", label: "設定", icon: "⚙️" },
+  { href: "/bookmarklet", label: "データ取込", icon: "📲" },
 ];
 
 export default function Sidebar() {
