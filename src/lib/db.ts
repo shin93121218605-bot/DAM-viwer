@@ -1,12 +1,14 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 
 function createPrismaClient(): PrismaClient {
   const tursoUrl = process.env.TURSO_DATABASE_URL;
   const tursoToken = process.env.TURSO_AUTH_TOKEN;
 
   if (tursoUrl) {
-    const adapter = new PrismaLibSql({ url: tursoUrl, authToken: tursoToken ?? "" });
+    const libsql = createClient({ url: tursoUrl, authToken: tursoToken ?? "" });
+    const adapter = new PrismaLibSQL(libsql);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return new PrismaClient({ adapter } as any);
   }
