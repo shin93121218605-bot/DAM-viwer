@@ -10,7 +10,7 @@ const parser = new XMLParser({
   parseAttributeValue: true,
   parseTagValue: true,
   isArray: (name) =>
-    name === "scoringData" || name === "list" || name === "item",
+    name === "scoring" || name === "scoringData" || name === "list" || name === "item",
 });
 
 function toNumber(val: unknown): number | undefined {
@@ -72,6 +72,9 @@ function normalizeRecord(raw: Record<string, unknown>): DamtomoRecord {
     vocalRangeLowest: raw["vocalRangeLowest"]
       ? String(raw["vocalRangeLowest"])
       : undefined,
+    // Score is the text content of the <scoring> element (fast-xml-parser stores it as #text).
+    // DAMとも returns the score as an integer multiplied by 1000 (e.g. 87123 = 87.123 points).
+    score: raw["#text"] != null ? Number(raw["#text"]) / 1000 : undefined,
     performedAt: parsePerformedAt(raw),
   };
 }
@@ -85,8 +88,9 @@ export async function fetchPage(
   const res = await fetch(url, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
       Accept: "application/xml, text/xml, */*",
+      Referer: "https://www.clubdam.com/app/damtomo/scoring/GetScoringAiList.do",
     },
     cache: "no-store",
   });
@@ -119,9 +123,10 @@ export async function fetchPage(
   const hasNextRaw = pageData["hasNext"] ?? pageData["@_hasNext"];
   const hasNext = hasNextRaw === true || hasNextRaw === "1" || hasNextRaw === 1;
 
-  // Records may be in data.list, data.scoringData, etc.
+  // Records are in data.scoring (each <scoring> element is a record).
+  // Fallback to other possible container names for robustness.
   const listContainer =
-    data["list"] ?? data["scoringData"] ?? data["scoringAiData"] ?? [];
+    data["scoring"] ?? data["list"] ?? data["scoringData"] ?? data["scoringAiData"] ?? [];
   const rawList: unknown[] = Array.isArray(listContainer)
     ? listContainer
     : listContainer

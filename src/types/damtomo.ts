@@ -19,6 +19,7 @@ export interface DamtomoRecord {
   singingRangeLowest?: string;
   vocalRangeHighest?: string;
   vocalRangeLowest?: string;
+  score?: number;
   performedAt: Date;
 }
 

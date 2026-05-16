@@ -43,6 +43,7 @@ async function upsertRecords(records: DamtomoRecord[]): Promise<number> {
           singingRangeLowest: r.singingRangeLowest,
           vocalRangeHighest: r.vocalRangeHighest,
           vocalRangeLowest: r.vocalRangeLowest,
+          score: r.score,
           performedAt: r.performedAt,
         },
         create: {
@@ -66,6 +67,7 @@ async function upsertRecords(records: DamtomoRecord[]): Promise<number> {
           singingRangeLowest: r.singingRangeLowest,
           vocalRangeHighest: r.vocalRangeHighest,
           vocalRangeLowest: r.vocalRangeLowest,
+          score: r.score,
           performedAt: r.performedAt,
         },
       })

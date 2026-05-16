@@ -30,6 +30,7 @@ model ScoringRecord {
   singingRangeLowest        String?
   vocalRangeHighest         String?
   vocalRangeLowest          String?
+  score                     Float?
   performedAt               DateTime
   fetchedAt                 DateTime @default(now())
 
