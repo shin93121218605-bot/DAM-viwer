@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
   }
 
   let imported = 0;
+  let dbError: string | null = null;
   for (const r of records) {
     const id = String(r["scoringAiId"] ?? "");
     if (!id) continue;
@@ -109,13 +110,23 @@ export async function POST(req: NextRequest) {
       performedAt: parseDateTime(String(r["scoringDateTime"] ?? "")),
     };
 
-    await prisma.scoringRecord.upsert({
-      where: { scoringAiId: id },
-      update: row,
-      create: { scoringAiId: id, ...row },
-    });
-    imported++;
+    try {
+      await prisma.scoringRecord.upsert({
+        where: { scoringAiId: id },
+        update: row,
+        create: { scoringAiId: id, ...row },
+      });
+      imported++;
+    } catch (e) {
+      dbError = String(e instanceof Error ? e.message : e);
+      break;
+    }
   }
 
-  return NextResponse.json({ imported, hasNext, done: !hasNext }, { headers: CORS });
+  return NextResponse.json({
+    imported,
+    hasNext,
+    done: !hasNext,
+    debug: { bodyLen: xmlText.length, recordCount: records.length, dbError },
+  }, { headers: CORS });
 }
