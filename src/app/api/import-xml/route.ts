@@ -66,23 +66,15 @@ export async function POST(req: NextRequest) {
   const page = (data["page"] ?? {}) as Record<string, unknown>;
   const hasNext = page["hasNext"] === true || page["hasNext"] === "1" || page["hasNext"] === 1;
 
-  // Records are in root["list"]["scoring"], not root["data"]["scoring"]
+  // Structure: root.list.data[] → each item has .scoring[0] with the record
   const list = (root["list"] ?? {}) as Record<string, unknown>;
-  const rawList = (list["scoring"] ?? data["scoring"] ?? []) as unknown;
-  const records = Array.isArray(rawList) ? rawList : (rawList ? [rawList as Record<string, unknown>] : []);
-
-  if (records.length === 0) {
-    const listData = list["data"];
-    return NextResponse.json({
-      imported: 0, hasNext, done: !hasNext,
-      debug: {
-        rootKeys: Object.keys(root),
-        listKeys: Object.keys(list),
-        listDataType: typeof listData,
-        listDataIsArray: Array.isArray(listData),
-        listDataPreview: JSON.stringify(listData).slice(0, 500),
-      }
-    }, { headers: CORS });
+  const listData = list["data"];
+  const listDataArr = Array.isArray(listData) ? listData : (listData ? [listData] : []) as Record<string, unknown>[];
+  const records: Record<string, unknown>[] = [];
+  for (const item of listDataArr) {
+    const sc = (item as Record<string, unknown>)["scoring"];
+    if (Array.isArray(sc)) records.push(...sc as Record<string, unknown>[]);
+    else if (sc) records.push(sc as Record<string, unknown>);
   }
 
   let imported = 0;
