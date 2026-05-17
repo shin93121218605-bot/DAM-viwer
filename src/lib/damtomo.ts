@@ -123,10 +123,10 @@ export async function fetchPage(
   const hasNextRaw = pageData["hasNext"] ?? pageData["@_hasNext"];
   const hasNext = hasNextRaw === true || hasNextRaw === "1" || hasNextRaw === 1;
 
-  // Records are in data.scoring (each <scoring> element is a record).
-  // Fallback to other possible container names for robustness.
+  // Records are in root["list"]["scoring"] (list is a sibling of data, not a child).
+  const listEl = (root["list"] ?? {}) as Record<string, unknown>;
   const listContainer =
-    data["scoring"] ?? data["list"] ?? data["scoringData"] ?? data["scoringAiData"] ?? [];
+    listEl["scoring"] ?? data["scoring"] ?? data["list"] ?? data["scoringAiData"] ?? [];
   const rawList: unknown[] = Array.isArray(listContainer)
     ? listContainer
     : listContainer
