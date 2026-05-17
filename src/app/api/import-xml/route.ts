@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   // NG status = no more pages or auth error → signal done
   if (status === "NG" || (statusCode !== "0" && statusCode !== "")) {
-    return NextResponse.json({ imported: 0, hasNext: false, done: true }, { headers: CORS });
+    return NextResponse.json({ imported: 0, hasNext: false, done: true, doneNum: 1 }, { headers: CORS });
   }
 
   const data = (root["data"] ?? {}) as Record<string, unknown>;
@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
     imported,
     hasNext,
     done: !hasNext,
+    doneNum: hasNext ? 0 : 1,
     debug: { bodyLen: xmlText.length, recordCount: records.length, dbError },
   }, { headers: CORS });
 }

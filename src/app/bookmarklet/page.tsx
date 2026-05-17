@@ -1,222 +1,220 @@
 "use client";
 import { useState } from "react";
 
-const SCRIPT_CODE = `(function(){
-var APP = "https://dam-viwer-febw.vercel.app";
-var MAX = 40, DELAY = 500;
-var st = document.createElement("style");
-st.textContent = "#dDL{position:fixed;top:16px;right:16px;width:300px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:999999;font-family:sans-serif;font-size:14px}" +
-"#dDL .hd{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px;border-radius:12px 12px 0 0}" +
-"#dDL .hd h3{margin:0;font-size:15px}" +
-"#dDL .x{float:right;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;padding:2px 8px;border-radius:4px}" +
-"#dDL .bd{padding:14px}" +
-"#dDL .ms{margin:6px 0;padding:10px;border-radius:8px}" +
-"#dDL .info{background:#e3f2fd;color:#1565c0}" +
-"#dDL .ok{background:#e8f5e9;color:#2e7d32}" +
-"#dDL .err{background:#ffebee;color:#c62828}" +
-"#dDL button{width:100%;padding:11px;margin:4px 0;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}" +
-"#dDL .b1{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}" +
-"#dDL .b2{background:#6c757d;color:#fff}" +
-"#dDL .b4{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}" +
-"#dDL button:disabled{opacity:.4}" +
-"#dDL .bar{width:100%;height:6px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin:6px 0}" +
-"#dDL .fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);width:0;transition:width .3s}" +
-"#dDL .nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0}" +
-"#dDL .nb{background:#f8f9fa;padding:8px;border-radius:8px;text-align:center}" +
-"#dDL .nl{font-size:10px;color:#666}" +
-"#dDL .nv{font-size:18px;font-weight:700;color:#667eea}";
-document.head.appendChild(st);
-var old = document.getElementById("dDL");
-if (old) old.remove();
-var ui = document.createElement("div");
-ui.id = "dDL";
-ui.innerHTML =
-  '<div class="hd"><button class="x" id="dX">✕</button><h3>🎤 DAM採点履歴</h3></div>' +
-  '<div class="bd">' +
-  '<div class="ms info" id="dSt">準備完了</div>' +
-  '<div class="bar" id="dBar" style="display:none"><div class="fill" id="dFill"></div></div>' +
-  '<div class="nums" id="dNums" style="display:none">' +
-  '<div class="nb"><div class="nl">取得件数</div><div class="nv" id="dCnt">0</div></div>' +
-  '<div class="nb"><div class="nl">平均点</div><div class="nv" id="dAvg">-</div></div>' +
-  '<div class="nb"><div class="nl">最高点</div><div class="nv" id="dMax">-</div></div>' +
-  "</div>" +
-  '<button class="b2" id="dT">🔌 接続テスト</button>' +
-  '<button class="b1" id="dF">▶ データ取得開始</button>' +
-  '<button class="b4" id="dS" disabled>📤 アプリに送信</button>' +
-  "</div>";
-document.body.appendChild(ui);
-document.getElementById("dX").onclick = function() { ui.remove(); };
-var all = [], card = "";
-function msg(m, t) {
-  var e = document.getElementById("dSt");
-  e.textContent = m;
-  e.className = "ms " + t;
+const DAM_URL =
+  "https://www.clubdam.com/app/damtomo/scoring/GetScoringAiListXML.do";
+const IMPORT_URL = "https://dam-viwer-febw.vercel.app/api/import-xml";
+
+function CopyBtn({ text, label }: { text: string; label?: string }) {
+  const [ok, setOk] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); } catch { /* ignore */ }
+    setOk(true);
+    setTimeout(() => setOk(false), 2000);
+  };
+  return (
+    <div style={{ margin: "8px 0" }}>
+      {label && <div style={{ fontSize: "11px", color: "#888", marginBottom: "3px" }}>{label}</div>}
+      <div style={{ display: "flex", gap: "6px", alignItems: "stretch" }}>
+        <code style={{
+          flex: 1, background: "#f0f4ff", padding: "8px 10px", borderRadius: "6px",
+          fontSize: "11px", wordBreak: "break-all", border: "1px solid #d0d8ff", lineHeight: 1.5,
+        }}>
+          {text}
+        </code>
+        <button onClick={copy} style={{
+          padding: "0 14px", background: ok ? "#28a745" : "#667eea", color: "white",
+          border: "none", borderRadius: "6px", fontSize: "14px", cursor: "pointer", flexShrink: 0,
+        }}>
+          {ok ? "✅" : "📋"}
+        </button>
+      </div>
+    </div>
+  );
 }
-function parseXml(str) {
-  return new DOMParser().parseFromString(str, "text/xml");
+
+const pillStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#667eea",
+  color: "white",
+  borderRadius: "50%",
+  width: "26px",
+  height: "26px",
+  fontSize: "13px",
+  fontWeight: "bold",
+  marginRight: "8px",
+  flexShrink: 0,
+};
+
+function Tag({ children }: { children: string }) {
+  return (
+    <span style={{
+      background: "#fff3cd", border: "1px solid #ffc107", borderRadius: "4px",
+      padding: "1px 6px", fontSize: "12px", fontWeight: "bold", margin: "0 2px",
+    }}>{children}</span>
+  );
 }
-var BASE = "https://www.clubdam.com/app/damtomo/scoring/GetScoringAiListXML.do";
-document.getElementById("dT").onclick = async function() {
-  var input = prompt("CLUB DAM CARD IDを入力:", card);
-  if (!input) return;
-  card = input.trim();
-  msg("接続テスト中...", "info");
-  this.disabled = true;
-  try {
-    var res = await fetch(BASE + "?cdmCardNo=" + encodeURIComponent(card) + "&pageNo=1");
-    var xml = parseXml(await res.text());
-    if (xml.querySelector("status").textContent === "OK") {
-      msg("✅ 接続成功！ " + xml.querySelector("page").getAttribute("dataCount") + "件", "ok");
-    } else {
-      msg("❌ " + (xml.querySelector("message").textContent || "エラー"), "err");
-    }
-  } catch(e) { msg("❌ " + e.message, "err"); }
-  this.disabled = false;
-};
-document.getElementById("dF").onclick = async function() {
-  if (!card) { alert("先に接続テストでIDを設定してください"); return; }
-  msg("取得開始...", "info");
-  all = [];
-  this.disabled = true;
-  document.getElementById("dS").disabled = true;
-  try {
-    var pg = 1, hn = true;
-    while (hn && pg <= MAX) {
-      var res = await fetch(BASE + "?cdmCardNo=" + encodeURIComponent(card) + "&pageNo=" + pg);
-      var xml = parseXml(await res.text());
-      if (xml.querySelector("status").textContent !== "OK") {
-        throw new Error(xml.querySelector("message").textContent || "エラー");
-      }
-      var page = xml.querySelector("page");
-      var tot = parseInt(page.getAttribute("dataCount") || "0");
-      hn = page.getAttribute("hasNext") === "1";
-      var items = xml.querySelectorAll("scoring");
-      for (var k = 0; k < items.length; k++) {
-        var sc = items[k];
-        var d = { score: sc.textContent.trim() };
-        for (var a = 0; a < sc.attributes.length; a++) {
-          d[sc.attributes[a].name] = sc.attributes[a].value;
-        }
-        all.push(d);
-      }
-      msg("📥 " + all.length + "/" + tot + "件", "info");
-      document.getElementById("dBar").style.display = "block";
-      document.getElementById("dFill").style.width = (all.length / tot * 100) + "%";
-      document.getElementById("dNums").style.display = "grid";
-      document.getElementById("dCnt").textContent = all.length;
-      var scores = [];
-      for (var n = 0; n < all.length; n++) {
-        var v = parseInt(all[n].score || "0");
-        if (v > 0) scores.push(v);
-      }
-      if (scores.length) {
-        var sum = 0;
-        for (var n = 0; n < scores.length; n++) sum += scores[n];
-        var mx = scores[0];
-        for (var n = 1; n < scores.length; n++) if (scores[n] > mx) mx = scores[n];
-        document.getElementById("dAvg").textContent = (sum / scores.length / 1000).toFixed(3);
-        document.getElementById("dMax").textContent = (mx / 1000).toFixed(3);
-      }
-      pg++;
-      if (hn) await new Promise(function(r) { setTimeout(r, DELAY); });
-    }
-  } catch(e) { msg("❌ " + e.message, "err"); }
-  this.disabled = false;
-  if (all.length) { document.getElementById("dS").disabled = false; msg("✅ 完了！ " + all.length + "件", "ok"); }
-};
-document.getElementById("dS").onclick = async function() {
-  if (!all.length) return;
-  msg("📤 送信中...", "info");
-  this.disabled = true;
-  try {
-    var res = await fetch(APP + "/api/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(all)
-    });
-    var json = await res.json();
-    if (res.ok) { msg("✅ " + json.imported + "件をアプリに保存しました！", "ok"); }
-    else { msg("❌ " + (json.error || res.status), "err"); }
-  } catch(e) { msg("❌ " + e.message, "err"); }
-  this.disabled = false;
-};
-})();
-completion(null);`;
+
+function Blue({ children }: { children: string }) {
+  return <span style={{ color: "#1565c0", fontWeight: "bold" }}>{children}</span>;
+}
+
+function ActionBox({ num, title, children, dark }: { num: number; title: string; children?: React.ReactNode; dark?: boolean }) {
+  return (
+    <div style={{
+      background: dark ? "#e3f2fd" : "#f8f9fa",
+      border: `1px solid ${dark ? "#90caf9" : "#e0e0e0"}`,
+      borderRadius: "10px", padding: "12px 14px", marginBottom: "10px",
+    }}>
+      <div style={{ fontWeight: "bold", fontSize: "14px", marginBottom: "6px", display: "flex", alignItems: "center" }}>
+        <span style={{ ...pillStyle, background: dark ? "#1565c0" : "#667eea" }}>{num}</span>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const sub: React.CSSProperties = { fontSize: "13px", color: "#444", lineHeight: 1.9, paddingLeft: "34px" };
+
+function InnerAction({ num, title, children }: { num: number; title: string; children?: React.ReactNode }) {
+  return (
+    <div style={{ background: "#fff", border: "1px solid #ccc", borderRadius: "8px", padding: "10px 12px", marginBottom: "8px" }}>
+      <div style={{ fontWeight: "bold", fontSize: "13px", marginBottom: children ? "4px" : 0 }}>
+        {num} {title}
+      </div>
+      {children && <div style={{ fontSize: "13px", color: "#444", lineHeight: 1.9 }}>{children}</div>}
+    </div>
+  );
+}
 
 export default function BookmarkletPage() {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(SCRIPT_CODE);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch {
-      // fallback
-      const el = document.getElementById("script-box") as HTMLTextAreaElement;
-      if (el) { el.select(); document.execCommand("copy"); }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    }
-  };
-
   return (
-    <main style={{ padding: "20px", maxWidth: "560px", margin: "0 auto", fontFamily: "sans-serif" }}>
-      <h1 style={{ fontSize: "20px", marginBottom: "16px" }}>📲 データ取込の設定</h1>
+    <main style={{ padding: "20px", maxWidth: "580px", margin: "0 auto", fontFamily: "sans-serif" }}>
+      <h1 style={{ fontSize: "20px", marginBottom: "6px" }}>📲 ショートカット設定</h1>
+      <p style={{ color: "#666", fontSize: "13px", marginBottom: "16px" }}>
+        全ページ自動取得版。ショートカットアプリで「＋」→「新規ショートカット」を作り、アクションを順番に追加してください。
+      </p>
 
-      {/* ショートカット方法 */}
-      <div style={{ background: "#e8f5e9", border: "1px solid #4caf50", borderRadius: "10px", padding: "16px", marginBottom: "20px" }}>
-        <b style={{ fontSize: "15px" }}>✅ おすすめ：ショートカットアプリを使う方法</b>
+      <div style={{ background: "#e8f5e9", border: "1px solid #81c784", borderRadius: "8px", padding: "10px 12px", marginBottom: "16px", fontSize: "13px" }}>
+        <b>✅ 事前確認：</b> SafariでSafariで clubdam.com にログインしておくこと
       </div>
 
-      <h2 style={{ fontSize: "16px", margin: "0 0 10px" }}>① コードをコピー</h2>
-      <textarea
-        id="script-box"
-        readOnly
-        value={SCRIPT_CODE}
-        style={{
-          width: "100%", height: "80px", fontSize: "10px", fontFamily: "monospace",
-          background: "#1e1e1e", color: "#aaa", border: "none", borderRadius: "8px",
-          padding: "10px", resize: "none", boxSizing: "border-box",
-        }}
-      />
-      <button
-        onClick={copy}
-        style={{
-          width: "100%", padding: "14px", marginTop: "8px", border: "none",
-          borderRadius: "8px", fontSize: "16px", fontWeight: 700, cursor: "pointer",
-          background: copied ? "#28a745" : "linear-gradient(135deg,#667eea,#764ba2)",
-          color: "white",
-        }}
-      >
-        {copied ? "✅ コピーしました！" : "📋 コードをコピー"}
-      </button>
+      {/* Copy URLs */}
+      <div style={{ background: "#fff", border: "1px solid #ddd", borderRadius: "10px", padding: "14px", marginBottom: "20px" }}>
+        <div style={{ fontWeight: "bold", marginBottom: "10px", fontSize: "14px" }}>🔗 先にコピーしておくURL</div>
+        <CopyBtn label="① DAMとも APIのURL（アクション⑦で使う）" text={DAM_URL} />
+        <CopyBtn label="② アプリのURL（アクション⑨で使う）" text={IMPORT_URL} />
+      </div>
 
-      <h2 style={{ fontSize: "16px", margin: "20px 0 10px" }}>② ショートカットに貼り付け</h2>
-      <div style={{ background: "#f8f9fa", borderRadius: "10px", padding: "16px" }}>
-        <ol style={{ margin: 0, paddingLeft: "20px", lineHeight: 2.2 }}>
-          <li>ショートカットアプリを開く（青いアプリ）</li>
-          <li>右上の <b>「＋」</b> をタップ</li>
-          <li><b>「アクションを追加」</b> →「スクリプト」か「Web」で検索 →<br />
-            <b>「Webページでスクリプトを実行」</b> をタップ</li>
-          <li>スクリプト欄に <b>①でコピーしたコード</b> を貼り付け</li>
-          <li>右上 <b>「完了」</b> → 名前は <b>「DAM取込」</b></li>
+      {/* Action 1 */}
+      <ActionBox num={1} title="「入力を要求」を追加">
+        <div style={sub}>
+          • <Tag>プロンプト</Tag> カードIDを入力してください<br />
+          • <Tag>入力の種類</Tag> テキスト<br />
+          • その後「変数を設定」が自動追加 → 変数名を <Blue>「cardId」</Blue> に変更
+        </div>
+      </ActionBox>
+
+      {/* Action 2 */}
+      <ActionBox num={2} title="「変数を設定」を追加">
+        <div style={sub}>
+          • <Tag>変数</Tag> done<br />
+          • <Tag>値</Tag> 0（数字のゼロ）
+        </div>
+      </ActionBox>
+
+      {/* Loop block */}
+      <ActionBox num={3} title="「繰り返す」を追加" dark>
+        <div style={sub}>• <Tag>回数</Tag> 50</div>
+
+        <div style={{ borderLeft: "3px solid #90caf9", marginLeft: "8px", marginTop: "12px", paddingLeft: "10px", paddingBottom: "4px" }}>
+          <div style={{ fontSize: "12px", color: "#1565c0", fontWeight: "bold", marginBottom: "10px" }}>
+            ── 繰り返しの中に ④〜⑪ を追加 ──
+          </div>
+
+          <InnerAction num={4} title="「もし」を追加">
+            • <Tag>入力</Tag> 変数「done」<br />
+            • <Tag>条件</Tag> 等しい<br />
+            • <Tag>値</Tag> 1
+          </InnerAction>
+
+          <InnerAction num={5} title="「繰り返しを終了する」← 「もし」の内側に追加" />
+
+          <InnerAction num={6} title="「終了条件」← 自動追加" />
+
+          <InnerAction num={7} title="「URLの内容を取得」を追加（DAMとも → XML取得）">
+            • <Tag>メソッド</Tag> GET<br />
+            • <Tag>URL</Tag> 下記の手順で設定：
+            <div style={{ background: "#fffde7", border: "1px solid #fdd835", borderRadius: "6px", padding: "10px", marginTop: "6px", lineHeight: 2.2 }}>
+              <b>URLの入力手順：</b><br />
+              ① 「DAMとも APIのURL」をペースト<br />
+              ② その後ろに続けて入力: <code>?cdmCardNo=</code><br />
+              ③ <Blue>変数アイコン（青い丸↑）</Blue> →「cardId」を挿入<br />
+              ④ 続けて入力: <code>&amp;pageNo=</code><br />
+              ⑤ <Blue>変数アイコン</Blue> →「繰り返し回数」を挿入
+            </div>
+            <div style={{ marginTop: "6px", fontSize: "12px", color: "#888" }}>
+              完成形: <code style={{ fontSize: "10px" }}>{DAM_URL}?cdmCardNo=[cardId]&pageNo=[繰り返し回数]</code>
+            </div>
+          </InnerAction>
+
+          <InnerAction num={8} title="「変数を設定」を追加">
+            • <Tag>変数</Tag> xml<br />
+            • <Tag>値</Tag> URLの内容（⑦の結果が自動で入る）
+          </InnerAction>
+
+          <InnerAction num={9} title="「URLの内容を取得」を追加（アプリに送信）">
+            • <Tag>URL</Tag> 「アプリのURL」をペースト<br />
+            • <Tag>メソッド</Tag> POST<br />
+            • <Tag>リクエストの本文</Tag> <Blue>「ファイル」</Blue> を選択<br />
+            　→ ファイル欄に変数 <Blue>「xml」</Blue> を挿入
+          </InnerAction>
+
+          <InnerAction num={10} title="「辞書の値を取得」を追加">
+            • <Tag>辞書</Tag> URLの内容（⑨の結果）<br />
+            • <Tag>キー</Tag> doneNum
+          </InnerAction>
+
+          <InnerAction num={11} title="「変数を設定」を追加">
+            • <Tag>変数</Tag> done<br />
+            • <Tag>値</Tag> 辞書の値（⑩の結果が自動で入る）
+          </InnerAction>
+
+          <div style={{ fontSize: "12px", color: "#1565c0", fontWeight: "bold", marginTop: "4px" }}>
+            ── ここまでが繰り返しの中 ──
+          </div>
+        </div>
+      </ActionBox>
+
+      {/* Action 12 */}
+      <ActionBox num={12} title="「繰り返し終了」← 自動追加" />
+
+      {/* Action 13 */}
+      <ActionBox num={13} title="「テキストを表示」を追加">
+        <div style={sub}>• <Tag>テキスト</Tag> 取り込み完了！</div>
+      </ActionBox>
+
+      <div style={{ background: "#e8f5e9", border: "1px solid #81c784", borderRadius: "8px", padding: "10px 12px", marginBottom: "20px", fontSize: "13px" }}>
+        <b>✅ 保存：</b> 右上「完了」→ 名前を <b>「DAM全取込」</b> にして保存
+      </div>
+
+      {/* Usage */}
+      <div style={{ background: "#f8f9fa", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
+        <b style={{ fontSize: "14px" }}>▶ 使い方</b>
+        <ol style={{ margin: "8px 0 0", paddingLeft: "20px", lineHeight: 2.2, fontSize: "13px" }}>
+          <li>Safariで clubdam.com にログインしておく</li>
+          <li>ショートカットアプリで「DAM全取込」を実行</li>
+          <li>カードIDを入力（例: 12345678）</li>
+          <li>自動で全ページ取得・保存が始まる</li>
+          <li>「取り込み完了！」が出たら完了</li>
         </ol>
       </div>
 
-      <h2 style={{ fontSize: "16px", margin: "20px 0 10px" }}>③ 使い方</h2>
-      <div style={{ background: "#f8f9fa", borderRadius: "10px", padding: "16px" }}>
-        <ol style={{ margin: 0, paddingLeft: "20px", lineHeight: 2.2 }}>
-          <li>Safari で <b>clubdam.com</b> を開いてログイン</li>
-          <li>画面下の <b>共有ボタン</b>（□から↑が出るアイコン）をタップ</li>
-          <li>メニューから <b>「DAM取込」</b> をタップ</li>
-          <li>画面に操作パネルが出る！</li>
-          <li>「接続テスト」→「データ取得」→「アプリに送信」</li>
-        </ol>
-      </div>
-
-      <div style={{ background: "#fff3cd", border: "1px solid #ffc107", borderRadius: "8px", padding: "12px", marginTop: "20px", fontSize: "13px" }}>
-        <b>⚠️</b> ショートカットを初めて使うとき「Webサイトへのアクセスを許可しますか？」と聞かれます。<b>「許可」</b> をタップしてください。
+      <div style={{ background: "#fff3cd", border: "1px solid #ffc107", borderRadius: "8px", padding: "10px 12px", fontSize: "12px" }}>
+        <b>⚠️</b> 初回実行時「clubdam.comへのアクセスを許可しますか？」→ <b>「許可」</b> をタップ
       </div>
     </main>
   );
