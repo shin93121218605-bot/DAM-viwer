@@ -71,6 +71,20 @@ export async function POST(req: NextRequest) {
   const rawList = (list["scoring"] ?? data["scoring"] ?? []) as unknown;
   const records = Array.isArray(rawList) ? rawList : (rawList ? [rawList as Record<string, unknown>] : []);
 
+  if (records.length === 0) {
+    return NextResponse.json({
+      imported: 0, hasNext, done: !hasNext,
+      debug: {
+        rootKeys: Object.keys(root),
+        listKeys: Object.keys(list),
+        listScoringType: typeof list["scoring"],
+        listScoringIsArray: Array.isArray(list["scoring"]),
+        listScoringLength: Array.isArray(list["scoring"]) ? (list["scoring"] as unknown[]).length : null,
+        firstListValue: list["scoring"] ? JSON.stringify(list["scoring"]).slice(0, 300) : null,
+      }
+    }, { headers: CORS });
+  }
+
   let imported = 0;
   for (const r of records) {
     const id = String(r["scoringAiId"] ?? "");
