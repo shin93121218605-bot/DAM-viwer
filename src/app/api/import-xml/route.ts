@@ -67,7 +67,20 @@ export async function POST(req: NextRequest) {
   const hasNext = page["hasNext"] === true || page["hasNext"] === "1" || page["hasNext"] === 1;
 
   const rawList = (data["scoring"] ?? []) as Record<string, unknown>[];
-  const records = Array.isArray(rawList) ? rawList : [rawList];
+  const records = Array.isArray(rawList) ? rawList : (rawList ? [rawList] : []);
+
+  // Debug: return structure info when no records found
+  if (records.length === 0) {
+    return NextResponse.json({
+      imported: 0, hasNext, done: !hasNext,
+      debug: {
+        rootKeys: Object.keys(root),
+        dataKeys: Object.keys(data),
+        pageKeys: Object.keys(page),
+        recordCount: 0,
+      }
+    }, { headers: CORS });
+  }
 
   let imported = 0;
   for (const r of records) {
