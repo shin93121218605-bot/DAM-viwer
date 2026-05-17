@@ -1,7 +1,147 @@
 "use client";
 import { useState } from "react";
 
-const SCRIPT_CODE = `(function(){var APP='https://dam-viwer-febw.vercel.app';var C={maxPages:40,delay:500};var st=document.createElement('style');st.textContent='#dDL{position:fixed;top:16px;right:16px;width:300px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:999999;font-family:sans-serif;font-size:14px}#dDL .hd{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px;border-radius:12px 12px 0 0}#dDL .hd h3{margin:0;font-size:15px}#dDL .x{float:right;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;padding:2px 8px;border-radius:4px}#dDL .bd{padding:14px}#dDL .st{margin:6px 0;padding:10px;border-radius:8px}#dDL .info{background:#e3f2fd;color:#1565c0}#dDL .ok{background:#e8f5e9;color:#2e7d32}#dDL .err{background:#ffebee;color:#c62828}#dDL button{width:100%;padding:11px;margin:4px 0;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}#dDL .b1{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}#dDL .b2{background:#6c757d;color:#fff}#dDL .b3{background:#28a745;color:#fff}#dDL .b4{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}#dDL button:disabled{opacity:.4}#dDL .bar{width:100%;height:6px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin:6px 0}#dDL .fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);width:0;transition:width .3s}#dDL .nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0}#dDL .nb{background:#f8f9fa;padding:8px;border-radius:8px;text-align:center}#dDL .nl{font-size:10px;color:#666}#dDL .nv{font-size:18px;font-weight:700;color:#667eea}';document.head.appendChild(st);var old=document.getElementById('dDL');if(old)old.remove();var ui=document.createElement('div');ui.id='dDL';ui.innerHTML='<div class="hd"><button class="x" onclick="document.getElementById(\'dDL\').remove()">✕<\/button><h3>🎤 DAM採点履歴<\/h3><\/div><div class="bd"><div class="st info" id="dSt">準備完了<\/div><div class="bar" id="dBar" style="display:none"><div class="fill" id="dFill"><\/div><\/div><div class="nums" id="dNums" style="display:none"><div class="nb"><div class="nl">取得件数<\/div><div class="nv" id="dCnt">0<\/div><\/div><div class="nb"><div class="nl">平均点<\/div><div class="nv" id="dAvg">-<\/div><\/div><div class="nb"><div class="nl">最高点<\/div><div class="nv" id="dMax">-<\/div><\/div><\/div><button class="b2" id="dT">🔌 接続テスト<\/button><button class="b1" id="dF">▶ データ取得開始<\/button><button class="b4" id="dS" disabled>📤 アプリに送信<\/button><\/div>';document.body.appendChild(ui);var all=[],card='';function s(m,t){var e=document.getElementById('dSt');e.textContent=m;e.className='st '+t;}function px(str){return new DOMParser().parseFromString(str,'text/xml');}document.getElementById('dT').onclick=async function(){var i=prompt('CLUB DAM CARD IDを入力:',card);if(!i)return;card=i.trim();s('接続テスト中...','info');this.disabled=true;try{var r=await fetch('https://www.clubdam.com/app/damtomo/scoring/GetScoringAiListXML.do?cdmCardNo='+encodeURIComponent(card)+'&pageNo=1');var x=px(await r.text());if(x.querySelector('status')?.textContent==='OK'){s('✅ 接続成功！ '+x.querySelector('page')?.getAttribute('dataCount')+'件','ok');}else{s('❌ '+(x.querySelector('message')?.textContent||'エラー'),'err');}}catch(e){s('❌ '+e.message,'err');}this.disabled=false;};document.getElementById('dF').onclick=async function(){if(!card){alert('先に接続テストでIDを設定してください');return;}s('取得開始...','info');all=[];this.disabled=true;document.getElementById('dS').disabled=true;try{var pg=1,hn=true;while(hn&&pg<=C.maxPages){var r=await fetch('https://www.clubdam.com/app/damtomo/scoring/GetScoringAiListXML.do?cdmCardNo='+encodeURIComponent(card)+'&pageNo='+pg);var x=px(await r.text());if(x.querySelector('status')?.textContent!=='OK')throw new Error(x.querySelector('message')?.textContent||'エラー');var p=x.querySelector('page');var tot=parseInt(p?.getAttribute('dataCount')||'0');hn=p?.getAttribute('hasNext')==='1';Array.from(x.querySelectorAll('scoring')).forEach(function(sc){var d={score:sc.textContent.trim()};for(var i=0;i<sc.attributes.length;i++)d[sc.attributes[i].name]=sc.attributes[i].value;all.push(d);});s('📥 '+all.length+'/'+tot+'件','info');document.getElementById('dBar').style.display='block';document.getElementById('dFill').style.width=(all.length/tot*100)+'%';document.getElementById('dNums').style.display='grid';document.getElementById('dCnt').textContent=all.length;var sc=all.map(function(d){return parseInt(d.score||'0');}).filter(function(v){return v>0;});if(sc.length){document.getElementById('dAvg').textContent=(sc.reduce(function(a,b){return a+b;},0)/sc.length/1000).toFixed(3);document.getElementById('dMax').textContent=(Math.max.apply(null,sc)/1000).toFixed(3);}pg++;if(hn)await new Promise(function(resolve){setTimeout(resolve,C.delay);});}}catch(e){s('❌ '+e.message,'err');}this.disabled=false;if(all.length)document.getElementById('dS').disabled=false;s('✅ 完了！ '+all.length+'件','ok');};document.getElementById('dS').onclick=async function(){if(!all.length)return;s('📤 送信中...','info');this.disabled=true;try{var r=await fetch(APP+'/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all)});var j=await r.json();if(r.ok){s('✅ '+j.imported+'件をアプリに保存しました！','ok');}else{s('❌ '+(j.error||r.status),'err');}}catch(e){s('❌ '+e.message,'err');}this.disabled=false;};})();completion(null);`;
+const SCRIPT_CODE = `(function(){
+var APP = "https://dam-viwer-febw.vercel.app";
+var MAX = 40, DELAY = 500;
+var st = document.createElement("style");
+st.textContent = "#dDL{position:fixed;top:16px;right:16px;width:300px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:999999;font-family:sans-serif;font-size:14px}" +
+"#dDL .hd{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px;border-radius:12px 12px 0 0}" +
+"#dDL .hd h3{margin:0;font-size:15px}" +
+"#dDL .x{float:right;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:16px;cursor:pointer;padding:2px 8px;border-radius:4px}" +
+"#dDL .bd{padding:14px}" +
+"#dDL .ms{margin:6px 0;padding:10px;border-radius:8px}" +
+"#dDL .info{background:#e3f2fd;color:#1565c0}" +
+"#dDL .ok{background:#e8f5e9;color:#2e7d32}" +
+"#dDL .err{background:#ffebee;color:#c62828}" +
+"#dDL button{width:100%;padding:11px;margin:4px 0;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}" +
+"#dDL .b1{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}" +
+"#dDL .b2{background:#6c757d;color:#fff}" +
+"#dDL .b4{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff}" +
+"#dDL button:disabled{opacity:.4}" +
+"#dDL .bar{width:100%;height:6px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin:6px 0}" +
+"#dDL .fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);width:0;transition:width .3s}" +
+"#dDL .nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0}" +
+"#dDL .nb{background:#f8f9fa;padding:8px;border-radius:8px;text-align:center}" +
+"#dDL .nl{font-size:10px;color:#666}" +
+"#dDL .nv{font-size:18px;font-weight:700;color:#667eea}";
+document.head.appendChild(st);
+var old = document.getElementById("dDL");
+if (old) old.remove();
+var ui = document.createElement("div");
+ui.id = "dDL";
+ui.innerHTML =
+  '<div class="hd"><button class="x" id="dX">✕</button><h3>🎤 DAM採点履歴</h3></div>' +
+  '<div class="bd">' +
+  '<div class="ms info" id="dSt">準備完了</div>' +
+  '<div class="bar" id="dBar" style="display:none"><div class="fill" id="dFill"></div></div>' +
+  '<div class="nums" id="dNums" style="display:none">' +
+  '<div class="nb"><div class="nl">取得件数</div><div class="nv" id="dCnt">0</div></div>' +
+  '<div class="nb"><div class="nl">平均点</div><div class="nv" id="dAvg">-</div></div>' +
+  '<div class="nb"><div class="nl">最高点</div><div class="nv" id="dMax">-</div></div>' +
+  "</div>" +
+  '<button class="b2" id="dT">🔌 接続テスト</button>' +
+  '<button class="b1" id="dF">▶ データ取得開始</button>' +
+  '<button class="b4" id="dS" disabled>📤 アプリに送信</button>' +
+  "</div>";
+document.body.appendChild(ui);
+document.getElementById("dX").onclick = function() { ui.remove(); };
+var all = [], card = "";
+function msg(m, t) {
+  var e = document.getElementById("dSt");
+  e.textContent = m;
+  e.className = "ms " + t;
+}
+function parseXml(str) {
+  return new DOMParser().parseFromString(str, "text/xml");
+}
+var BASE = "https://www.clubdam.com/app/damtomo/scoring/GetScoringAiListXML.do";
+document.getElementById("dT").onclick = async function() {
+  var input = prompt("CLUB DAM CARD IDを入力:", card);
+  if (!input) return;
+  card = input.trim();
+  msg("接続テスト中...", "info");
+  this.disabled = true;
+  try {
+    var res = await fetch(BASE + "?cdmCardNo=" + encodeURIComponent(card) + "&pageNo=1");
+    var xml = parseXml(await res.text());
+    if (xml.querySelector("status").textContent === "OK") {
+      msg("✅ 接続成功！ " + xml.querySelector("page").getAttribute("dataCount") + "件", "ok");
+    } else {
+      msg("❌ " + (xml.querySelector("message").textContent || "エラー"), "err");
+    }
+  } catch(e) { msg("❌ " + e.message, "err"); }
+  this.disabled = false;
+};
+document.getElementById("dF").onclick = async function() {
+  if (!card) { alert("先に接続テストでIDを設定してください"); return; }
+  msg("取得開始...", "info");
+  all = [];
+  this.disabled = true;
+  document.getElementById("dS").disabled = true;
+  try {
+    var pg = 1, hn = true;
+    while (hn && pg <= MAX) {
+      var res = await fetch(BASE + "?cdmCardNo=" + encodeURIComponent(card) + "&pageNo=" + pg);
+      var xml = parseXml(await res.text());
+      if (xml.querySelector("status").textContent !== "OK") {
+        throw new Error(xml.querySelector("message").textContent || "エラー");
+      }
+      var page = xml.querySelector("page");
+      var tot = parseInt(page.getAttribute("dataCount") || "0");
+      hn = page.getAttribute("hasNext") === "1";
+      var items = xml.querySelectorAll("scoring");
+      for (var k = 0; k < items.length; k++) {
+        var sc = items[k];
+        var d = { score: sc.textContent.trim() };
+        for (var a = 0; a < sc.attributes.length; a++) {
+          d[sc.attributes[a].name] = sc.attributes[a].value;
+        }
+        all.push(d);
+      }
+      msg("📥 " + all.length + "/" + tot + "件", "info");
+      document.getElementById("dBar").style.display = "block";
+      document.getElementById("dFill").style.width = (all.length / tot * 100) + "%";
+      document.getElementById("dNums").style.display = "grid";
+      document.getElementById("dCnt").textContent = all.length;
+      var scores = [];
+      for (var n = 0; n < all.length; n++) {
+        var v = parseInt(all[n].score || "0");
+        if (v > 0) scores.push(v);
+      }
+      if (scores.length) {
+        var sum = 0;
+        for (var n = 0; n < scores.length; n++) sum += scores[n];
+        var mx = scores[0];
+        for (var n = 1; n < scores.length; n++) if (scores[n] > mx) mx = scores[n];
+        document.getElementById("dAvg").textContent = (sum / scores.length / 1000).toFixed(3);
+        document.getElementById("dMax").textContent = (mx / 1000).toFixed(3);
+      }
+      pg++;
+      if (hn) await new Promise(function(r) { setTimeout(r, DELAY); });
+    }
+  } catch(e) { msg("❌ " + e.message, "err"); }
+  this.disabled = false;
+  if (all.length) { document.getElementById("dS").disabled = false; msg("✅ 完了！ " + all.length + "件", "ok"); }
+};
+document.getElementById("dS").onclick = async function() {
+  if (!all.length) return;
+  msg("📤 送信中...", "info");
+  this.disabled = true;
+  try {
+    var res = await fetch(APP + "/api/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(all)
+    });
+    var json = await res.json();
+    if (res.ok) { msg("✅ " + json.imported + "件をアプリに保存しました！", "ok"); }
+    else { msg("❌ " + (json.error || res.status), "err"); }
+  } catch(e) { msg("❌ " + e.message, "err"); }
+  this.disabled = false;
+};
+})();
+completion(null);`;
 
 export default function BookmarkletPage() {
   const [copied, setCopied] = useState(false);
