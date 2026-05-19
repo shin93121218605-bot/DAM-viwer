@@ -33,6 +33,30 @@ model ScoringRecord {
   score                     Float?
   performedAt               DateTime
   fetchedAt                 DateTime @default(now())
+  // Extended fields (from CSV)
+  lastPerformKey                    Int?
+  intonation                        Int?
+  kobushiCount                      Int?
+  shakuriCount                      Int?
+  fallCount                         Int?
+  timing                            Int?
+  longtoneSkill                     Int?
+  vibratoSkill                      Int?
+  vibratoType                       Int?
+  vibratoTotalSecond                Float?
+  vibratoCount                      Int?
+  accentCount                       Int?
+  aiSensitivityMeterAdd             Int?
+  aiSensitivityMeterDeduct          Int?
+  aiSensitivityPoints               Int?
+  aiSensitivityBonus                Float?
+  nationalAverageTotalPoints        Float?
+  nationalAveragePitch              Float?
+  nationalAverageStability          Float?
+  nationalAverageExpression         Float?
+  nationalAverageVibratoAndLongtone Float?
+  nationalAverageRhythm             Float?
+  maxTotalPoints                    Float?
 
   @@index([requestNo])
   @@index([performedAt])

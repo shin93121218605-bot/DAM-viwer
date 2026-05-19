@@ -76,14 +76,20 @@ export default async function SongDetailPage({
         <div className="bg-white rounded-xl shadow p-5">
           <h2 className="text-base font-semibold text-gray-700 mb-4">採点項目（最高値）</h2>
           <RadarScoreChart
-            best={best}
-            latest={{
-              pitch: latest.radarChartPitch,
-              stability: latest.radarChartStability,
-              expressive: latest.radarChartExpressive,
-              vibrato: latest.radarChartVibratoLongtone,
-              rhythm: latest.radarChartRhythm,
-            }}
+            series={[
+              { values: best, label: "最高記録", color: "#f59e0b" },
+              {
+                values: {
+                  pitch: latest.radarChartPitch,
+                  stability: latest.radarChartStability,
+                  expressive: latest.radarChartExpressive,
+                  vibrato: latest.radarChartVibratoLongtone,
+                  rhythm: latest.radarChartRhythm,
+                },
+                label: "最新",
+                color: "#ec4899",
+              },
+            ]}
           />
         </div>
       </div>

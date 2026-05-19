@@ -10,9 +10,10 @@ interface SongRow {
   playCount: number;
   bestScore: number | null;
   lastPlayed: string | null;
+  bestAiBonus: number | null;
 }
 
-type SortKey = "playCount" | "lastPlayed" | "bestScore";
+type SortKey = "playCount" | "lastPlayed" | "bestScore" | "bestAiBonus";
 
 export default function SongsPage() {
   const [songs, setSongs] = useState<SongRow[]>([]);
@@ -42,9 +43,12 @@ export default function SongsPage() {
       } else if (sort === "lastPlayed") {
         va = a.lastPlayed ? new Date(a.lastPlayed).getTime() : 0;
         vb = b.lastPlayed ? new Date(b.lastPlayed).getTime() : 0;
-      } else {
+      } else if (sort === "bestScore") {
         va = a.bestScore ?? -1;
         vb = b.bestScore ?? -1;
+      } else {
+        va = a.bestAiBonus ?? -1;
+        vb = b.bestAiBonus ?? -1;
       }
       return sortAsc ? va - vb : vb - va;
     });
@@ -93,6 +97,7 @@ export default function SongsPage() {
                   曲名
                 </th>
                 {th("bestScore", "最高点")}
+                {th("bestAiBonus", "AI感性")}
                 {th("playCount", "練習回数")}
                 {th("lastPlayed", "最終練習")}
               </tr>
@@ -111,6 +116,9 @@ export default function SongsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-pink-600 whitespace-nowrap">
                     {song.bestScore != null ? song.bestScore.toFixed(3) : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-purple-600 whitespace-nowrap">
+                    {song.bestAiBonus != null ? `+${song.bestAiBonus.toFixed(3)}` : "-"}
                   </td>
                   <td className="px-4 py-3 text-sm text-blue-600 font-semibold whitespace-nowrap">
                     {song.playCount}回

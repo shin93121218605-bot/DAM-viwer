@@ -11,37 +11,36 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface RadarData {
-  subject: string;
-  best: number;
-  latest: number;
+export interface RadarValues {
+  pitch?: number | null;
+  stability?: number | null;
+  expressive?: number | null;
+  vibrato?: number | null;
+  rhythm?: number | null;
+}
+
+export interface RadarSeries {
+  values: RadarValues;
+  label: string;
+  color: string;
 }
 
 interface RadarScoreChartProps {
-  best: {
-    pitch?: number | null;
-    stability?: number | null;
-    expressive?: number | null;
-    vibrato?: number | null;
-    rhythm?: number | null;
-  };
-  latest: {
-    pitch?: number | null;
-    stability?: number | null;
-    expressive?: number | null;
-    vibrato?: number | null;
-    rhythm?: number | null;
-  };
+  series: RadarSeries[];
 }
 
-export default function RadarScoreChart({ best, latest }: RadarScoreChartProps) {
-  const data: RadarData[] = [
-    { subject: "音程", best: best.pitch ?? 0, latest: latest.pitch ?? 0 },
-    { subject: "安定性", best: best.stability ?? 0, latest: latest.stability ?? 0 },
-    { subject: "表現力", best: best.expressive ?? 0, latest: latest.expressive ?? 0 },
-    { subject: "ビブラート", best: best.vibrato ?? 0, latest: latest.vibrato ?? 0 },
-    { subject: "リズム", best: best.rhythm ?? 0, latest: latest.rhythm ?? 0 },
-  ];
+export default function RadarScoreChart({ series }: RadarScoreChartProps) {
+  const subjects = ["音程", "安定性", "表現力", "ビブラート", "リズム"];
+  const keys: (keyof RadarValues)[] = ["pitch", "stability", "expressive", "vibrato", "rhythm"];
+
+  const data = subjects.map((subject, i) => {
+    const key = keys[i];
+    const entry: Record<string, string | number> = { subject };
+    series.forEach((s) => {
+      entry[s.label] = s.values[key] ?? 0;
+    });
+    return entry;
+  });
 
   return (
     <ResponsiveContainer width="100%" height={280}>
@@ -49,20 +48,16 @@ export default function RadarScoreChart({ best, latest }: RadarScoreChartProps) 
         <PolarGrid />
         <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12 }} />
         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} />
-        <Radar
-          name="最高記録"
-          dataKey="best"
-          stroke="#f59e0b"
-          fill="#f59e0b"
-          fillOpacity={0.25}
-        />
-        <Radar
-          name="最新"
-          dataKey="latest"
-          stroke="#ec4899"
-          fill="#ec4899"
-          fillOpacity={0.25}
-        />
+        {series.map((s) => (
+          <Radar
+            key={s.label}
+            name={s.label}
+            dataKey={s.label}
+            stroke={s.color}
+            fill={s.color}
+            fillOpacity={0.2}
+          />
+        ))}
         <Legend />
         <Tooltip formatter={(v: number) => v.toFixed(1)} />
       </RadarChart>

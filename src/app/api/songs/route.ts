@@ -12,6 +12,7 @@ export async function GET() {
       playCount: number;
       bestScore: number | null;
       lastPlayed: string | null;
+      bestAiBonus: number | null;
     }[]
   >`
     SELECT
@@ -20,7 +21,8 @@ export async function GET() {
       dArtistName,
       COUNT(*) as playCount,
       MAX(score) as bestScore,
-      MAX(performedAt) as lastPlayed
+      MAX(performedAt) as lastPlayed,
+      MAX(aiSensitivityBonus) as bestAiBonus
     FROM ScoringRecord
     GROUP BY requestNo
     ORDER BY playCount DESC
@@ -30,6 +32,7 @@ export async function GET() {
     ...r,
     playCount: Number(r.playCount),
     bestScore: r.bestScore != null ? Number(r.bestScore) : null,
+    bestAiBonus: r.bestAiBonus != null ? Number(r.bestAiBonus) : null,
   }));
 
   return NextResponse.json({ songs });

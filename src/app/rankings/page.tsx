@@ -31,8 +31,9 @@ async function getRankings() {
       dArtistName: string;
       score: number;
       performedAt: string;
+      aiSensitivityBonus: number | null;
     }[]>`
-      SELECT scoringAiId, requestNo, dContentsName, dArtistName, score, performedAt
+      SELECT scoringAiId, requestNo, dContentsName, dArtistName, score, performedAt, aiSensitivityBonus
       FROM ScoringRecord
       WHERE score IS NOT NULL
       ORDER BY score DESC
@@ -51,7 +52,11 @@ async function getRankings() {
       playCount: Number(s.playCount),
       bestScore: s.bestScore != null ? Number(s.bestScore) : null,
     })),
-    topByScore: topByScore.map((s) => ({ ...s, score: Number(s.score) })),
+    topByScore: topByScore.map((s) => ({
+      ...s,
+      score: Number(s.score),
+      aiSensitivityBonus: s.aiSensitivityBonus != null ? Number(s.aiSensitivityBonus) : null,
+    })),
     monthlyCounts: monthlyCounts.map((m) => ({ ...m, count: Number(m.count) })),
   };
 }
@@ -128,6 +133,9 @@ export default async function RankingsPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-sm font-bold text-pink-600 block">{rec.score.toFixed(3)}</span>
+                      {rec.aiSensitivityBonus != null && (
+                        <span className="text-xs text-purple-500">AI+{rec.aiSensitivityBonus.toFixed(3)}</span>
+                      )}
                     </div>
                     <span className="text-gray-300 text-xs shrink-0">›</span>
                   </Link>

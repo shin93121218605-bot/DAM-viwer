@@ -74,6 +74,16 @@ export async function POST(req: NextRequest) {
     const scoreRaw = toFloat(r["score"]);
     const score = scoreRaw != null ? scoreRaw / 1000 : null;
 
+    const toInt = (v: string | undefined) => {
+      if (!v || v === "") return null;
+      const n = parseInt(v, 10);
+      return isNaN(n) ? null : n;
+    };
+    const scaled = (v: string | undefined) => {
+      const n = toFloat(v);
+      return n != null ? n / 1000 : null;
+    };
+
     const row = {
       requestNo: r["requestNo"] ?? "",
       contentsName: r["contentsName"] ?? "",
@@ -83,7 +93,7 @@ export async function POST(req: NextRequest) {
       damserial: r["damserial"] ?? "",
       dataKind: r["dataKind"] ?? "",
       clubDamCardNo: r["clubDamCardNo"] ?? "",
-      entryCount: r["entryCount"] ? Number(r["entryCount"]) : null,
+      entryCount: toInt(r["entryCount"]),
       analysisReportCommentNo: r["analysisReportCommentNo"] || null,
       radarChartPitch: toFloat(r["radarChartPitch"]),
       radarChartStability: toFloat(r["radarChartStability"]),
@@ -96,6 +106,30 @@ export async function POST(req: NextRequest) {
       vocalRangeLowest: r["vocalRangeLowest"] || null,
       score,
       performedAt: parseDateTime(r["scoringDateTime"]),
+      // Extended fields
+      lastPerformKey: toInt(r["lastPerformKey"]),
+      intonation: toInt(r["intonation"]),
+      kobushiCount: toInt(r["kobushiCount"]),
+      shakuriCount: toInt(r["shakuriCount"]),
+      fallCount: toInt(r["fallCount"]),
+      timing: toInt(r["timing"]),
+      longtoneSkill: toInt(r["longtoneSkill"]),
+      vibratoSkill: toInt(r["vibratoSkill"]),
+      vibratoType: toInt(r["vibratoType"]),
+      vibratoTotalSecond: toFloat(r["vibratoTotalSecond"]),
+      vibratoCount: toInt(r["vibratoCount"]),
+      accentCount: toInt(r["accentCount"]),
+      aiSensitivityMeterAdd: toInt(r["aiSensitivityMeterAdd"]),
+      aiSensitivityMeterDeduct: toInt(r["aiSensitivityMeterDeduct"]),
+      aiSensitivityPoints: toInt(r["aiSensitivityPoints"]),
+      aiSensitivityBonus: scaled(r["aiSensitivityBonus"]),
+      nationalAverageTotalPoints: scaled(r["nationalAverageTotalPoints"]),
+      nationalAveragePitch: toFloat(r["nationalAveragePitch"]),
+      nationalAverageStability: toFloat(r["nationalAverageStability"]),
+      nationalAverageExpression: toFloat(r["nationalAverageExpression"]),
+      nationalAverageVibratoAndLongtone: toFloat(r["nationalAverageVibratoAndLongtone"]),
+      nationalAverageRhythm: toFloat(r["nationalAverageRhythm"]),
+      maxTotalPoints: scaled(r["maxTotalPoints"]),
     };
 
     try {
