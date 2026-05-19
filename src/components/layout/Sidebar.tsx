@@ -10,6 +10,7 @@ const links = [
   { href: "/rankings", label: "ランキング", icon: "🏆" },
   { href: "/settings", label: "設定", icon: "⚙️" },
   { href: "/bookmarklet", label: "データ取込", icon: "📲" },
+  { href: "/import-csv", label: "CSVインポート", icon: "📂" },
 ];
 
 export default function Sidebar() {
