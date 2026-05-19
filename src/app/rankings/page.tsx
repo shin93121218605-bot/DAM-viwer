@@ -9,20 +9,12 @@ async function getRankings() {
       dContentsName: string;
       dArtistName: string;
       playCount: number;
-      bestPitch: number | null;
-      bestStability: number | null;
-      bestExpressive: number | null;
-      bestVibrato: number | null;
-      bestRhythm: number | null;
+      bestScore: number | null;
     }[]>`
       SELECT
         requestNo, dContentsName, dArtistName,
         COUNT(*) as playCount,
-        MAX(radarChartPitch) as bestPitch,
-        MAX(radarChartStability) as bestStability,
-        MAX(radarChartExpressive) as bestExpressive,
-        MAX(radarChartVibratoLongtone) as bestVibrato,
-        MAX(radarChartRhythm) as bestRhythm
+        MAX(score) as bestScore
       FROM ScoringRecord
       GROUP BY requestNo
       ORDER BY playCount DESC
@@ -35,36 +27,21 @@ async function getRankings() {
   ]);
 
   return {
-    topByCount: topByCount.map((s) => ({ ...s, playCount: Number(s.playCount) })),
+    topByCount: topByCount.map((s) => ({
+      ...s,
+      playCount: Number(s.playCount),
+      bestScore: s.bestScore != null ? Number(s.bestScore) : null,
+    })),
     monthlyCounts: monthlyCounts.map((m) => ({ ...m, count: Number(m.count) })),
   };
-}
-
-function bestAvg(song: {
-  bestPitch: number | null;
-  bestStability: number | null;
-  bestExpressive: number | null;
-  bestVibrato: number | null;
-  bestRhythm: number | null;
-}): number | null {
-  const vals = [
-    song.bestPitch,
-    song.bestStability,
-    song.bestExpressive,
-    song.bestVibrato,
-    song.bestRhythm,
-  ].filter((v): v is number => v != null);
-  if (vals.length === 0) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
 export default async function RankingsPage() {
   const { topByCount, monthlyCounts } = await getRankings();
 
   const topByScore = [...topByCount]
-    .map((s) => ({ ...s, avg: bestAvg(s) }))
-    .filter((s) => s.avg != null)
-    .sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0))
+    .filter((s) => s.bestScore != null)
+    .sort((a, b) => (b.bestScore ?? 0) - (a.bestScore ?? 0))
     .slice(0, 10);
 
   return (
@@ -142,7 +119,7 @@ export default async function RankingsPage() {
                     <p className="text-xs text-gray-400 truncate">{song.dArtistName}</p>
                   </div>
                   <span className="text-sm font-semibold text-pink-600 shrink-0">
-                    {song.avg!.toFixed(1)}
+                    {song.bestScore!.toFixed(3)}
                   </span>
                 </li>
               ))}
