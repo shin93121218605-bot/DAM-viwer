@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "ダッシュボード", icon: "🏠" },
-  { href: "/songs", label: "曲一覧", icon: "🎵" },
-  { href: "/history", label: "採点履歴", icon: "📋" },
+  { href: "/songs", label: "曲別分析", icon: "🎵" },
+  { href: "/history", label: "全曲分析", icon: "📋" },
   { href: "/rankings", label: "ランキング", icon: "🏆" },
   { href: "/settings", label: "設定", icon: "⚙️" },
   { href: "/bookmarklet", label: "データ取込", icon: "📲" },

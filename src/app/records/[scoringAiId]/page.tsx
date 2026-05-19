@@ -216,7 +216,7 @@ export default async function RecordDetailPage({
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: "ビブラートタイプ", value: fmtInt(record.vibratoType) },
-                  { label: "ビブラート時間", value: fmtNum(record.vibratoTotalSecond) + "秒" },
+                  { label: "ビブラート時間", value: record.vibratoTotalSecond != null ? (record.vibratoTotalSecond / 10).toFixed(1) + "秒" : "—" },
                   { label: "回数-ビブラート", value: fmtInt(record.vibratoCount) },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between bg-pink-50 rounded-lg px-3 py-2">
