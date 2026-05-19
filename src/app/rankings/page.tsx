@@ -1,9 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/db";
+import Link from "next/link";
+
+const medalColor = (i: number) =>
+  i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-amber-700" : "text-gray-300";
 
 async function getRankings() {
-  const [topByCount, monthlyCounts] = await Promise.all([
+  const [topByCount, topByScore, monthlyCounts] = await Promise.all([
+    // 練習回数ランキング（曲別集計）
     prisma.$queryRaw<{
       requestNo: string;
       dContentsName: string;
@@ -11,15 +16,29 @@ async function getRankings() {
       playCount: number;
       bestScore: number | null;
     }[]>`
-      SELECT
-        requestNo, dContentsName, dArtistName,
-        COUNT(*) as playCount,
-        MAX(score) as bestScore
+      SELECT requestNo, dContentsName, dArtistName,
+        COUNT(*) as playCount, MAX(score) as bestScore
       FROM ScoringRecord
       GROUP BY requestNo
       ORDER BY playCount DESC
+      LIMIT 10
+    `,
+    // 点数ランキング（個別レコード）
+    prisma.$queryRaw<{
+      scoringAiId: string;
+      requestNo: string;
+      dContentsName: string;
+      dArtistName: string;
+      score: number;
+      performedAt: string;
+    }[]>`
+      SELECT scoringAiId, requestNo, dContentsName, dArtistName, score, performedAt
+      FROM ScoringRecord
+      WHERE score IS NOT NULL
+      ORDER BY score DESC
       LIMIT 20
     `,
+    // 月別
     prisma.$queryRaw<{ month: string; count: number }[]>`
       SELECT strftime('%Y-%m', performedAt) as month, COUNT(*) as count
       FROM ScoringRecord GROUP BY month ORDER BY month DESC LIMIT 12
@@ -32,95 +51,86 @@ async function getRankings() {
       playCount: Number(s.playCount),
       bestScore: s.bestScore != null ? Number(s.bestScore) : null,
     })),
+    topByScore: topByScore.map((s) => ({ ...s, score: Number(s.score) })),
     monthlyCounts: monthlyCounts.map((m) => ({ ...m, count: Number(m.count) })),
   };
 }
 
 export default async function RankingsPage() {
-  const { topByCount, monthlyCounts } = await getRankings();
-
-  const topByScore = [...topByCount]
-    .filter((s) => s.bestScore != null)
-    .sort((a, b) => (b.bestScore ?? 0) - (a.bestScore ?? 0))
-    .slice(0, 10);
+  const { topByCount, topByScore, monthlyCounts } = await getRankings();
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">ランキング・統計</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Most played */}
+        {/* 練習回数ランキング → 曲サマリーへ */}
         <div className="bg-white rounded-xl shadow p-5">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">
-            練習回数ランキング
-          </h2>
+          <h2 className="text-base font-semibold text-gray-700 mb-1">練習回数ランキング</h2>
+          <p className="text-xs text-gray-400 mb-4">タップで曲サマリーへ</p>
           {topByCount.length === 0 ? (
             <p className="text-sm text-gray-400">データなし</p>
           ) : (
-            <ol className="space-y-2">
-              {topByCount.slice(0, 10).map((song, i) => (
-                <li key={song.requestNo} className="flex items-center gap-3">
-                  <span
-                    className={`w-6 text-center text-sm font-bold ${
-                      i === 0
-                        ? "text-yellow-500"
-                        : i === 1
-                        ? "text-gray-400"
-                        : i === 2
-                        ? "text-amber-700"
-                        : "text-gray-400"
-                    }`}
+            <ol className="space-y-1">
+              {topByCount.map((song, i) => (
+                <li key={song.requestNo}>
+                  <Link
+                    href={`/songs/${encodeURIComponent(song.requestNo)}`}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors group"
                   >
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {song.dContentsName}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{song.dArtistName}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-blue-600 shrink-0">
-                    {song.playCount}回
-                  </span>
+                    <span className={`w-6 text-center text-sm font-bold shrink-0 ${medalColor(i)}`}>
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate group-hover:text-pink-600">
+                        {song.dContentsName}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{song.dArtistName}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-semibold text-blue-600 block">{song.playCount}回</span>
+                      {song.bestScore != null && (
+                        <span className="text-xs text-gray-400">最高 {song.bestScore.toFixed(3)}</span>
+                      )}
+                    </div>
+                    <span className="text-gray-300 text-xs shrink-0">›</span>
+                  </Link>
                 </li>
               ))}
             </ol>
           )}
         </div>
 
-        {/* Best score */}
+        {/* 点数ランキング → 個別結果へ */}
         <div className="bg-white rounded-xl shadow p-5">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">
-            最高スコアランキング
-          </h2>
+          <h2 className="text-base font-semibold text-gray-700 mb-1">点数ランキング</h2>
+          <p className="text-xs text-gray-400 mb-4">タップで個別結果へ（全時間・全曲）</p>
           {topByScore.length === 0 ? (
             <p className="text-sm text-gray-400">データなし</p>
           ) : (
-            <ol className="space-y-2">
-              {topByScore.map((song, i) => (
-                <li key={song.requestNo} className="flex items-center gap-3">
-                  <span
-                    className={`w-6 text-center text-sm font-bold ${
-                      i === 0
-                        ? "text-yellow-500"
-                        : i === 1
-                        ? "text-gray-400"
-                        : i === 2
-                        ? "text-amber-700"
-                        : "text-gray-400"
-                    }`}
+            <ol className="space-y-1">
+              {topByScore.map((rec, i) => (
+                <li key={rec.scoringAiId}>
+                  <Link
+                    href={`/records/${rec.scoringAiId}`}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors group"
                   >
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {song.dContentsName}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{song.dArtistName}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-pink-600 shrink-0">
-                    {song.bestScore!.toFixed(3)}
-                  </span>
+                    <span className={`w-6 text-center text-sm font-bold shrink-0 ${medalColor(i)}`}>
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate group-hover:text-pink-600">
+                        {rec.dContentsName}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {rec.dArtistName} · {new Date(rec.performedAt).toLocaleDateString("ja-JP")}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-bold text-pink-600 block">{rec.score.toFixed(3)}</span>
+                    </div>
+                    <span className="text-gray-300 text-xs shrink-0">›</span>
+                  </Link>
                 </li>
               ))}
             </ol>
@@ -128,7 +138,7 @@ export default async function RankingsPage() {
         </div>
       </div>
 
-      {/* Monthly activity */}
+      {/* 月別練習回数 */}
       <div className="bg-white rounded-xl shadow p-5">
         <h2 className="text-base font-semibold text-gray-700 mb-4">月別練習回数</h2>
         {monthlyCounts.length === 0 ? (
@@ -142,14 +152,9 @@ export default async function RankingsPage() {
                 <div key={m.month} className="flex items-center gap-3">
                   <span className="w-16 text-xs text-gray-500 shrink-0">{m.month}</span>
                   <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                    <div
-                      className="h-4 bg-pink-400 rounded-full"
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className="h-4 bg-pink-400 rounded-full" style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="w-8 text-xs text-gray-600 text-right shrink-0">
-                    {m.count}
-                  </span>
+                  <span className="w-8 text-xs text-gray-600 text-right shrink-0">{m.count}</span>
                 </div>
               );
             })}
