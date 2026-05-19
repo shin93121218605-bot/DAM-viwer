@@ -17,11 +17,7 @@ async function getStats() {
           scoringAiId: true,
           dContentsName: true,
           dArtistName: true,
-          radarChartPitch: true,
-          radarChartStability: true,
-          radarChartExpressive: true,
-          radarChartVibratoLongtone: true,
-          radarChartRhythm: true,
+          score: true,
           performedAt: true,
           requestNo: true,
         },
@@ -42,23 +38,6 @@ async function getStats() {
   };
 }
 
-function avgScore(record: {
-  radarChartPitch: number | null;
-  radarChartStability: number | null;
-  radarChartExpressive: number | null;
-  radarChartVibratoLongtone: number | null;
-  radarChartRhythm: number | null;
-}) {
-  const vals = [
-    record.radarChartPitch,
-    record.radarChartStability,
-    record.radarChartExpressive,
-    record.radarChartVibratoLongtone,
-    record.radarChartRhythm,
-  ].filter((v): v is number => v != null);
-  if (vals.length === 0) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
 
 export default async function DashboardPage() {
   const { totalRecords, uniqueSongs, recentRecords, topSongs, lastSyncedAt } =
@@ -118,32 +97,29 @@ export default async function DashboardPage() {
             <p className="text-sm text-gray-400">データなし</p>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {recentRecords.map((r) => {
-                const avg = avgScore(r);
-                return (
-                  <li key={r.scoringAiId} className="py-2.5 flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <Link
-                        href={`/songs/${r.requestNo}`}
-                        className="text-sm font-medium text-gray-800 hover:text-pink-600 truncate block"
-                      >
-                        {r.dContentsName}
-                      </Link>
-                      <p className="text-xs text-gray-400 truncate">{r.dArtistName}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {avg != null && (
-                        <span className="text-sm font-semibold text-pink-600">
-                          {avg.toFixed(1)}
-                        </span>
-                      )}
-                      <p className="text-xs text-gray-400">
-                        {new Date(r.performedAt).toLocaleDateString("ja-JP")}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
+              {recentRecords.map((r) => (
+                <li key={r.scoringAiId} className="py-2.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/songs/${encodeURIComponent(r.requestNo)}`}
+                      className="text-sm font-medium text-gray-800 hover:text-pink-600 truncate block"
+                    >
+                      {r.dContentsName}
+                    </Link>
+                    <p className="text-xs text-gray-400 truncate">{r.dArtistName}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {r.score != null && (
+                      <span className="text-sm font-semibold text-pink-600">
+                        {r.score.toFixed(3)}
+                      </span>
+                    )}
+                    <p className="text-xs text-gray-400">
+                      {new Date(r.performedAt).toLocaleDateString("ja-JP")}
+                    </p>
+                  </div>
+                </li>
+              ))}
             </ul>
           )}
           <Link href="/history" className="mt-3 block text-xs text-pink-500 hover:underline text-right">
