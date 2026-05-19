@@ -8,33 +8,17 @@ interface SongRow {
   dContentsName: string;
   dArtistName: string;
   playCount: number;
-  bestPitch: number | null;
-  bestStability: number | null;
-  bestExpressive: number | null;
-  bestVibrato: number | null;
-  bestRhythm: number | null;
+  bestScore: number | null;
   lastPlayed: string | null;
 }
 
-type SortKey = "playCount" | "lastPlayed" | "bestAvg";
-
-function calcAvg(song: SongRow): number | null {
-  const vals = [
-    song.bestPitch,
-    song.bestStability,
-    song.bestExpressive,
-    song.bestVibrato,
-    song.bestRhythm,
-  ].filter((v): v is number => v != null);
-  if (vals.length === 0) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
+type SortKey = "playCount" | "lastPlayed" | "bestScore";
 
 export default function SongsPage() {
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("playCount");
+  const [sort, setSort] = useState<SortKey>("lastPlayed");
   const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
@@ -59,8 +43,8 @@ export default function SongsPage() {
         va = a.lastPlayed ? new Date(a.lastPlayed).getTime() : 0;
         vb = b.lastPlayed ? new Date(b.lastPlayed).getTime() : 0;
       } else {
-        va = calcAvg(a) ?? -1;
-        vb = calcAvg(b) ?? -1;
+        va = a.bestScore ?? -1;
+        vb = b.bestScore ?? -1;
       }
       return sortAsc ? va - vb : vb - va;
     });
@@ -72,7 +56,7 @@ export default function SongsPage() {
 
   const th = (key: SortKey, label: string) => (
     <th
-      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-800 select-none"
+      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-800 select-none whitespace-nowrap"
       onClick={() => toggleSort(key)}
     >
       {label} {sort === key ? (sortAsc ? "↑" : "↓") : ""}
@@ -81,7 +65,12 @@ export default function SongsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-gray-800">曲一覧</h1>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-2xl font-bold text-gray-800">曲一覧</h1>
+        {!loading && (
+          <span className="text-sm text-gray-500">{filtered.length} 曲</span>
+        )}
+      </div>
 
       <input
         type="text"
@@ -103,42 +92,38 @@ export default function SongsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   曲名
                 </th>
+                {th("bestScore", "最高点")}
                 {th("playCount", "練習回数")}
-                {th("bestAvg", "最高平均")}
                 {th("lastPlayed", "最終練習")}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((song) => {
-                const avg = calcAvg(song);
-                return (
-                  <tr key={song.requestNo} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/songs/${song.requestNo}`}
-                        className="font-medium text-gray-800 hover:text-pink-600"
-                      >
-                        {song.dContentsName}
-                      </Link>
-                      <p className="text-xs text-gray-400">{song.dArtistName}</p>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-blue-600 font-semibold">
-                      {song.playCount}回
-                    </td>
-                    <td className="px-4 py-3 text-sm text-pink-600 font-semibold">
-                      {avg != null ? avg.toFixed(1) : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {song.lastPlayed
-                        ? new Date(song.lastPlayed).toLocaleDateString("ja-JP")
-                        : "-"}
-                    </td>
-                  </tr>
-                );
-              })}
+              {filtered.map((song) => (
+                <tr key={song.requestNo} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/songs/${encodeURIComponent(song.requestNo)}`}
+                      className="font-medium text-gray-800 hover:text-pink-600"
+                    >
+                      {song.dContentsName}
+                    </Link>
+                    <p className="text-xs text-gray-400">{song.dArtistName}</p>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-pink-600 whitespace-nowrap">
+                    {song.bestScore != null ? song.bestScore.toFixed(3) : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-blue-600 font-semibold whitespace-nowrap">
+                    {song.playCount}回
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                    {song.lastPlayed
+                      ? new Date(song.lastPlayed).toLocaleDateString("ja-JP")
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          <p className="px-4 py-2 text-xs text-gray-400">{filtered.length} 曲</p>
         </div>
       )}
     </div>

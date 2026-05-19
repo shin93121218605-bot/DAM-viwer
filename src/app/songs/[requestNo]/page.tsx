@@ -11,16 +11,17 @@ export default async function SongDetailPage({
 }: {
   params: { requestNo: string };
 }) {
+  const requestNo = decodeURIComponent(params.requestNo);
   const records = await prisma.scoringRecord.findMany({
-    where: { requestNo: params.requestNo },
+    where: { requestNo },
     orderBy: { performedAt: "asc" },
   });
 
   if (records.length === 0) notFound();
 
   const latest = records[records.length - 1];
+  const bestScore = Math.max(...records.map((r) => r.score ?? 0)) || null;
 
-  // Find best across each dimension
   const best = {
     pitch: Math.max(...records.map((r) => r.radarChartPitch ?? 0)),
     stability: Math.max(...records.map((r) => r.radarChartStability ?? 0)),
@@ -30,28 +31,17 @@ export default async function SongDetailPage({
   };
 
   const trendData = records.map((r) => ({
-    date: new Date(r.performedAt).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" }),
+    date: new Date(r.performedAt).toLocaleDateString("ja-JP", {
+      month: "numeric",
+      day: "numeric",
+    }),
+    score: r.score,
     pitch: r.radarChartPitch,
     stability: r.radarChartStability,
     expressive: r.radarChartExpressive,
     vibrato: r.radarChartVibratoLongtone,
     rhythm: r.radarChartRhythm,
   }));
-
-  const avgAll = records
-    .map((r) => {
-      const vals = [
-        r.radarChartPitch,
-        r.radarChartStability,
-        r.radarChartExpressive,
-        r.radarChartVibratoLongtone,
-        r.radarChartRhythm,
-      ].filter((v): v is number => v != null);
-      return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-    })
-    .filter((v): v is number => v != null);
-
-  const overallBest = avgAll.length > 0 ? Math.max(...avgAll) : null;
 
   return (
     <div className="space-y-6">
@@ -64,11 +54,11 @@ export default async function SongDetailPage({
       <div className="bg-white rounded-xl shadow p-5">
         <h1 className="text-xl font-bold text-gray-800">{latest.dContentsName}</h1>
         <p className="text-sm text-gray-500">{latest.dArtistName}</p>
-        <div className="flex gap-6 mt-3 text-sm">
+        <div className="flex gap-6 mt-3 text-sm flex-wrap">
           <span className="text-blue-600 font-semibold">{records.length}回練習</span>
-          {overallBest != null && (
+          {bestScore != null && (
             <span className="text-pink-600 font-semibold">
-              最高平均: {overallBest.toFixed(1)}
+              最高点: {bestScore.toFixed(3)}
             </span>
           )}
           <span className="text-gray-500">
@@ -80,11 +70,11 @@ export default async function SongDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow p-5">
           <h2 className="text-base font-semibold text-gray-700 mb-4">スコア推移</h2>
-          <ScoreTrendChart data={trendData} bestScore={overallBest} />
+          <ScoreTrendChart data={trendData} bestScore={bestScore} />
         </div>
 
         <div className="bg-white rounded-xl shadow p-5">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">採点項目</h2>
+          <h2 className="text-base font-semibold text-gray-700 mb-4">採点項目（最高値）</h2>
           <RadarScoreChart
             best={best}
             latest={{
@@ -103,7 +93,7 @@ export default async function SongDetailPage({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {["日付", "音程", "安定性", "表現力", "ビブラート", "リズム"].map((h) => (
+              {["日付", "スコア", "音程", "安定性", "表現力", "ビブラート", "リズム"].map((h) => (
                 <th
                   key={h}
                   className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
@@ -116,8 +106,11 @@ export default async function SongDetailPage({
           <tbody className="divide-y divide-gray-100">
             {[...records].reverse().map((r) => (
               <tr key={r.scoringAiId} className="hover:bg-gray-50">
-                <td className="px-4 py-2 text-sm text-gray-600">
+                <td className="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">
                   {new Date(r.performedAt).toLocaleDateString("ja-JP")}
+                </td>
+                <td className="px-4 py-2 text-sm font-semibold text-pink-600 whitespace-nowrap">
+                  {r.score != null ? r.score.toFixed(3) : "-"}
                 </td>
                 {[
                   r.radarChartPitch,

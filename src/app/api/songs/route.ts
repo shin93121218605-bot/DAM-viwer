@@ -10,11 +10,7 @@ export async function GET() {
       dContentsName: string;
       dArtistName: string;
       playCount: number;
-      bestPitch: number | null;
-      bestStability: number | null;
-      bestExpressive: number | null;
-      bestVibrato: number | null;
-      bestRhythm: number | null;
+      bestScore: number | null;
       lastPlayed: string | null;
     }[]
   >`
@@ -23,11 +19,7 @@ export async function GET() {
       dContentsName,
       dArtistName,
       COUNT(*) as playCount,
-      MAX(radarChartPitch) as bestPitch,
-      MAX(radarChartStability) as bestStability,
-      MAX(radarChartExpressive) as bestExpressive,
-      MAX(radarChartVibratoLongtone) as bestVibrato,
-      MAX(radarChartRhythm) as bestRhythm,
+      MAX(score) as bestScore,
       MAX(performedAt) as lastPlayed
     FROM ScoringRecord
     GROUP BY requestNo
@@ -37,6 +29,7 @@ export async function GET() {
   const songs = rows.map((r) => ({
     ...r,
     playCount: Number(r.playCount),
+    bestScore: r.bestScore != null ? Number(r.bestScore) : null,
   }));
 
   return NextResponse.json({ songs });
