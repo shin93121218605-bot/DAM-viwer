@@ -9,6 +9,8 @@ export default function SettingsPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [migrateStatus, setMigrateStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [migrateResults, setMigrateResults] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -66,6 +68,43 @@ export default function SettingsPage() {
         </div>
         {saved && <p className="text-sm text-green-600">保存しました</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
+      </section>
+
+      <section className="bg-white rounded-xl shadow p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-700">DBマイグレーション</h2>
+        <p className="text-sm text-gray-500">
+          アプリ更新後に新しいDB列を追加します。初回または更新後に一度だけ実行してください。
+        </p>
+        <button
+          onClick={async () => {
+            setMigrateStatus("running");
+            setMigrateResults([]);
+            try {
+              const res = await fetch("/api/migrate", { method: "POST" });
+              const data = await res.json();
+              setMigrateResults(data.results ?? []);
+              setMigrateStatus(data.ok ? "done" : "error");
+            } catch {
+              setMigrateStatus("error");
+              setMigrateResults(["通信エラー"]);
+            }
+          }}
+          disabled={migrateStatus === "running"}
+          className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+        >
+          {migrateStatus === "running" ? "実行中..." : "マイグレーション実行"}
+        </button>
+        {migrateStatus === "done" && (
+          <p className="text-sm text-green-600">完了しました</p>
+        )}
+        {migrateStatus === "error" && (
+          <p className="text-sm text-red-600">エラーが発生しました</p>
+        )}
+        {migrateResults.length > 0 && (
+          <ul className="text-xs text-gray-500 space-y-0.5 font-mono bg-gray-50 rounded p-3 max-h-40 overflow-y-auto">
+            {migrateResults.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        )}
       </section>
 
       <section className="bg-white rounded-xl shadow p-6 space-y-4">
