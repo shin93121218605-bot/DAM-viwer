@@ -15,6 +15,10 @@ function fmtNum(v: number | null | undefined, decimals = 1) {
   return v != null ? v.toFixed(decimals) : "—";
 }
 
+function fmtMetric(v: number | null | undefined) {
+  return v != null ? String(Math.round(v)) : "—";
+}
+
 function fmtInt(v: number | null | undefined) {
   return v != null ? String(v) : "—";
 }
@@ -153,10 +157,10 @@ export default async function RecordDetailPage({
                   <p className="text-xs text-gray-500 mb-1">{label}</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm font-semibold text-pink-600">
-                      {fmtNum(mine)}
+                      {fmtMetric(mine)}
                     </span>
                     {avg != null && (
-                      <span className="text-xs text-gray-400">全国 {fmtNum(avg)}</span>
+                      <span className="text-xs text-gray-400">全国 {fmtMetric(avg)}</span>
                     )}
                   </div>
                 </div>

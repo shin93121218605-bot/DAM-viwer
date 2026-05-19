@@ -34,6 +34,10 @@ function fmtScore(v: number | null, decimals = 3) {
   return v != null ? v.toFixed(decimals) : "—";
 }
 
+function fmtMetric(v: number | null) {
+  return v != null ? String(Math.round(v)) : "—";
+}
+
 export default function HistoryPage() {
   const [records, setRecords] = useState<RecordRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -237,22 +241,22 @@ export default function HistoryPage() {
                       {fmtScore(r.score)}
                     </td>
                     <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">
-                      {fmtScore(r.radarChartPitch, 1)}
+                      {fmtMetric(r.radarChartPitch)}
                     </td>
                     <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">
-                      {fmtScore(r.radarChartStability, 1)}
+                      {fmtMetric(r.radarChartStability)}
                     </td>
                     <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">
-                      {fmtScore(r.radarChartExpressive, 1)}
+                      {fmtMetric(r.radarChartExpressive)}
                     </td>
                     <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">
-                      {fmtScore(r.radarChartVibratoLongtone, 1)}
+                      {fmtMetric(r.radarChartVibratoLongtone)}
                     </td>
                     <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">
-                      {fmtScore(r.radarChartRhythm, 1)}
+                      {fmtMetric(r.radarChartRhythm)}
                     </td>
                     <td className="px-3 py-2 text-right text-purple-600 font-semibold whitespace-nowrap">
-                      {r.aiSensitivityPoints != null ? r.aiSensitivityPoints : "—"}
+                      {fmtMetric(r.aiSensitivityPoints)}
                     </td>
                   </tr>
                 ))}

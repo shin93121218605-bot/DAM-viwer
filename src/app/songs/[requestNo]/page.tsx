@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ScoreTrendChart from "@/components/charts/ScoreTrendChart";
 import RadarScoreChart from "@/components/charts/RadarScoreChart";
+import SongHistoryTable from "@/components/SongHistoryTable";
 
 export default async function SongDetailPage({
   params,
@@ -15,6 +16,19 @@ export default async function SongDetailPage({
   const records = await prisma.scoringRecord.findMany({
     where: { requestNo },
     orderBy: { performedAt: "asc" },
+    select: {
+      scoringAiId: true,
+      dContentsName: true,
+      dArtistName: true,
+      score: true,
+      radarChartPitch: true,
+      radarChartStability: true,
+      radarChartExpressive: true,
+      radarChartVibratoLongtone: true,
+      radarChartRhythm: true,
+      aiSensitivityPoints: true,
+      performedAt: true,
+    },
   });
 
   if (records.length === 0) notFound();
@@ -43,11 +57,24 @@ export default async function SongDetailPage({
     rhythm: r.radarChartRhythm,
   }));
 
+  // Serialize for client component
+  const historyRecords = records.map((r) => ({
+    scoringAiId: r.scoringAiId,
+    performedAt: r.performedAt.toISOString(),
+    score: r.score,
+    radarChartPitch: r.radarChartPitch,
+    radarChartStability: r.radarChartStability,
+    radarChartExpressive: r.radarChartExpressive,
+    radarChartVibratoLongtone: r.radarChartVibratoLongtone,
+    radarChartRhythm: r.radarChartRhythm,
+    aiSensitivityPoints: r.aiSensitivityPoints,
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Link href="/songs" className="text-sm text-gray-400 hover:text-pink-500">
-          ← 曲一覧
+          ← 曲別分析
         </Link>
       </div>
 
@@ -94,45 +121,9 @@ export default async function SongDetailPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
+      <div className="bg-white rounded-xl shadow">
         <h2 className="text-base font-semibold text-gray-700 p-5 pb-3">採点履歴</h2>
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {["日付", "スコア", "音程", "安定性", "表現力", "ビブラート", "リズム"].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {[...records].reverse().map((r) => (
-              <tr key={r.scoringAiId} className="hover:bg-gray-50">
-                <td className="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">
-                  {new Date(r.performedAt).toLocaleDateString("ja-JP")}
-                </td>
-                <td className="px-4 py-2 text-sm font-semibold text-pink-600 whitespace-nowrap">
-                  {r.score != null ? r.score.toFixed(3) : "-"}
-                </td>
-                {[
-                  r.radarChartPitch,
-                  r.radarChartStability,
-                  r.radarChartExpressive,
-                  r.radarChartVibratoLongtone,
-                  r.radarChartRhythm,
-                ].map((val, i) => (
-                  <td key={i} className="px-4 py-2 text-sm text-gray-700">
-                    {val != null ? val.toFixed(1) : "-"}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SongHistoryTable records={historyRecords} />
       </div>
     </div>
   );
